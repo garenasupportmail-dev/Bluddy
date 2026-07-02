@@ -465,62 +465,33 @@ async def button_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ============ DEAL PARSER ============
 def parse_deal(text):
     data = {}
-    lines = text.split('\n')
-    current_key = None
-    
-    for line in lines:
+    for line in text.split('\n'):
         line = line.strip()
         if not line:
             continue
-        
-        # Check for various field patterns
-        if 'AMOUNT' in line.upper() or '𝘼𝙈𝙊𝙐𝙉𝙏' in line:
-            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else line.split('-') if '-' in line else [line]
-            if len(parts) > 1:
-                data['deal_amount'] = parts[1].strip()
-            else:
-                data['deal_amount'] = 'N/A'
-        elif 'BUYER' in line.upper() or '𝘽𝙐𝙔𝙀𝙍' in line:
-            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else line.split('-') if '-' in line else [line]
-            if len(parts) > 1:
-                val = parts[1].strip()
-                val = val.replace('@', '@')
-                data['buyers'] = val
-            else:
-                data['buyers'] = 'N/A'
-        elif 'SELLER' in line.upper() or '𝙎𝙀𝙇𝙇𝙀𝙍' in line:
-            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else line.split('-') if '-' in line else [line]
-            if len(parts) > 1:
-                val = parts[1].strip()
-                val = val.replace('@', '@')
-                data['seller'] = val
-            else:
-                data['seller'] = 'N/A'
-        elif 'DETAIL' in line.upper() or '𝘿𝙀𝙏𝘼𝙄𝙇' in line:
-            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else line.split('-') if '-' in line else [line]
-            if len(parts) > 1:
-                data['deal_detail'] = parts[1].strip()
-            else:
-                data['deal_detail'] = 'N/A'
-        elif 'RLS' in line.upper() or '𝙍𝙇𝙎' in line:
-            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else line.split('-') if '-' in line else [line]
-            if len(parts) > 1:
-                data['rls_upi'] = parts[1].strip()
-            else:
-                data['rls_upi'] = 'N/A'
-        elif 'CONDITION' in line.upper() or '𝘾𝙊𝙉𝘿𝙄𝙏𝙄𝙊𝙉' in line:
-            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else line.split('-') if '-' in line else [line]
-            if len(parts) > 1:
-                data['condition'] = parts[1].strip()
-            else:
-                data['condition'] = 'N/A'
-        elif 'TILL' in line.upper() or '𝙏𝙄𝙇𝙇' in line:
-            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else line.split('-') if '-' in line else [line]
-            if len(parts) > 1:
-                data['escrow_till'] = parts[1].strip()
-            else:
-                data['escrow_till'] = 'N/A'
-    
+        if 'AMOUNT' in line.upper() or 'AMOUNT' in line:
+            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else [line]
+            data['deal_amount'] = parts[1].strip() if len(parts) > 1 else 'N/A'
+        elif 'BUYER' in line.upper():
+            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else [line]
+            val = parts[1].strip() if len(parts) > 1 else 'N/A'
+            data['buyers'] = val.replace('@', '@')
+        elif 'SELLER' in line.upper():
+            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else [line]
+            val = parts[1].strip() if len(parts) > 1 else 'N/A'
+            data['seller'] = val.replace('@', '@')
+        elif 'DETAIL' in line.upper():
+            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else [line]
+            data['deal_detail'] = parts[1].strip() if len(parts) > 1 else 'N/A'
+        elif 'RLS' in line.upper():
+            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else [line]
+            data['rls_upi'] = parts[1].strip() if len(parts) > 1 else 'N/A'
+        elif 'CONDITION' in line.upper():
+            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else [line]
+            data['condition'] = parts[1].strip() if len(parts) > 1 else 'N/A'
+        elif 'TILL' in line.upper():
+            parts = line.split(':-') if ':-' in line else line.split(':') if ':' in line else [line]
+            data['escrow_till'] = parts[1].strip() if len(parts) > 1 else 'N/A'
     return data
 
 async def handle_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -530,21 +501,15 @@ async def handle_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     if chat_id != GROUP_ID:
         return
-    
-    # Check for deal form
     has_deal = 'DEAL' in text.upper()
     has_field = any(f in text.upper() for f in ['AMOUNT', 'BUYER', 'SELLER', 'DETAIL', 'RLS', 'CONDITION', 'TILL'])
-    
     if not (has_deal and has_field):
         return
-    
     data = parse_deal(text)
     buyers = data.get('buyers', '').strip()
     seller = data.get('seller', '').strip()
-    
     if not buyers and not seller:
         return
-    
     did = gen_deal()
     deals[did] = {
         "deal_amount": data.get('deal_amount', 'N/A'),
@@ -558,7 +523,6 @@ async def handle_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "created_by": update.effective_user.id
     }
     save_json(DEALS_FILE, deals)
-    
     msg = f"""
 ✅ DEAL ID CREATED ✅
 ━━━━━━━━━━━━━━━━━━
@@ -576,8 +540,6 @@ RG : @KALYUGESCROWSERVICE
 ━━━━━━━━━━━━━━━━━━
 """
     await update.message.reply_text(wr(msg), parse_mode="HTML")
-    
-    # Send to admins
     for aid in admins_data.get("approved", []):
         try:
             amsg = f"""
@@ -597,10 +559,7 @@ RG : @KALYUGESCROWSERVICE
 async def handle_private(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or update.effective_chat.type != "private":
         return
-    
-    uid = update.effective_user.id
     text = update.message.text
-    
     if not text:
         if update.message.animation and context.user_data.get("awaiting_gif_file"):
             kw = context.user_data.get("gif_keyword", "")
@@ -613,13 +572,11 @@ async def handle_private(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text(f"✅ GIF SAVED!\nKeyword: {kw}\nUse /dice {kw} in group", parse_mode="HTML")
             return
         return
-    
     if text.lower() in gifs_data.get("gifs", {}):
         gif_id = gifs_data["gifs"][text.lower()]
         await context.bot.send_animation(chat_id=GROUP_ID, animation=gif_id)
         await update.message.reply_text(f"✅ GIF sent to group!", parse_mode="HTML")
         return
-    
     if context.user_data.get("awaiting_gif_keyword"):
         kw = text.strip().lower()
         context.user_data["gif_keyword"] = kw
@@ -632,10 +589,8 @@ async def handle_private(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def auto_check(context: ContextTypes.DEFAULT_TYPE):
     now = datetime.now()
     ct = now.strftime("%H:%M")
-    
     lt = config.get("lock_time")
     ut = config.get("unlock_time")
-    
     if lt and ct == lt and not config.get("locked"):
         try:
             perms = {
@@ -658,7 +613,6 @@ async def auto_check(context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=GROUP_ID, text=wr(m), parse_mode="HTML")
         except:
             pass
-    
     if ut and ct == ut and config.get("locked"):
         try:
             perms = {
@@ -678,7 +632,7 @@ async def auto_check(context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
-# ============ MAIN ============
+# ============ MAIN (FIXED) ============
 def main():
     Thread(target=run_flask, daemon=True).start()
     
@@ -702,9 +656,11 @@ def main():
     app.add_handler(CommandHandler("admins", admins))
     
     app.add_handler(CallbackQueryHandler(button_cb))
-    app.add_handler(MessageHandler(filters.TEXT & filters.Chat(GROUP_ID), handle_group))
-    app.add_handler(MessageHandler(filters.TEXT & filters.PRIVATE, handle_private))
-    app.add_handler(MessageHandler(filters.ANIMATION & filters.PRIVATE, handle_private))
+    
+    # FIX: filters.Chat use kiya, filters.PRIVATE nahi
+    app.add_handler(MessageHandler(filters.TEXT & filters.Chat(chat_id=GROUP_ID), handle_group))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.Chat(chat_id=GROUP_ID), handle_private))
+    app.add_handler(MessageHandler(filters.ANIMATION & ~filters.Chat(chat_id=GROUP_ID), handle_private))
     
     job_q = app.job_queue
     job_q.run_repeating(auto_check, interval=60, first=10)
